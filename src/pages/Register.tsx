@@ -211,7 +211,7 @@ const Register: React.FC = () => {
           userAttributes: {
             email,
             preferred_username: username,
-            "custom:role": role,
+            "custom:userRole": role,
           },
         },
       });

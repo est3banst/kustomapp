@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { Navigate, useLocation } from "react-router-dom";
-import { getCurrentUser } from "aws-amplify/auth";
+import { getCurrentUser, fetchUserAttributes } from "aws-amplify/auth";
 import { useUser } from "@/context/UserContext";
 
 interface Props {
@@ -19,10 +19,14 @@ const ProtectedRoute: React.FC<Props> = ({ children, guestOnly = false }) => {
       try {
         const cognitoUser = await getCurrentUser();
         setAuthenticated(true);
+        console.log("Current user", cognitoUser);
+        const userAttr = await fetchUserAttributes();
+        console.log("User attrs" , userAttr);
         if (!user) {
           setUser({
-            username: cognitoUser.username,
-            email: cognitoUser.signInDetails?.loginId ?? "",
+            username: userAttr.preferred_username?? "",
+            email: userAttr.email ?? "",
+            role: userAttr['custom:userRole'] as "developer" | "business",
             sub: cognitoUser.userId,
           });
         }

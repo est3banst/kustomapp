@@ -44,13 +44,11 @@ const Footer: React.FC = () => {
     { label: lang === "en" ? "Browse Services"  : "Ver Servicios",       path: "/services"          },
     { label: lang === "en" ? "Find a Developer" : "Encontrar Desarrollador", path: "/developers"    },
     { label: lang === "en" ? "Post a Project"   : "Publicar Proyecto",   path: "/post-project"      },
-    { label: lang === "en" ? "Pricing"          : "Precios",             path: "/pricing"           },
   ];
 
   const companyLinks = [
     { label: lang === "en" ? "About"   : "Nosotros",    path: "/about"   },
     { label: lang === "en" ? "Blog"    : "Blog",        path: "/blog"    },
-    { label: lang === "en" ? "Careers" : "Empleo",      path: "/careers" },
     { label: lang === "en" ? "FAQ"     : "Preguntas",   path: "/faq"     },
   ];
 

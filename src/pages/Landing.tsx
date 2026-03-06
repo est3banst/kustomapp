@@ -1,3 +1,5 @@
+import About from '@/components/About';
+import Footer from '@/components/Footer';
 import Hero from '@/components/Hero';
 import Nav from '@/components/Nav';
 import React from 'react'
@@ -29,9 +31,11 @@ const Landing = () => {
   return (
     <>
     <style> {styles} </style>
-    <div className='bg-black '>
+    <div className='bg-black min-h-screen font-sans'>
         <Nav/>
         <Hero />
+        <About/>
+        <Footer/>
     </div>
     </>
   )

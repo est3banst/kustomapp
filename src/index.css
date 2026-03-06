@@ -1,7 +1,7 @@
 @import "tailwindcss";
 
 :root {
-
+  scrollbar-color: #8e51ff #323232;
   font-synthesis: none;
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;

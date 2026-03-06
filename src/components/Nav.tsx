@@ -93,9 +93,9 @@ const Nav: React.FC = () => {
 
   const links = [
     { label: lang === "en" ? "Services" : "Servicios",   path: "/services"  },
-    { label: lang === "en" ? "Projects" : "Proyectos",   path: "/portfolio" },
+    // { label: lang === "en" ? "Projects" : "Proyectos",   path: "/portfolio" },
     { label: lang === "en" ? "For Devs" : "Devs",        path: "/developers" },
-    { label: lang === "en" ? "About"    : "Nosotros",    path: "/about"     },
+    { label: lang === "en" ? "Help" : "Ayuda", path: "/help" },
     { label: lang === "en" ? "Contact"  : "Contacto",    path: "/contact"   },
   ];
 
