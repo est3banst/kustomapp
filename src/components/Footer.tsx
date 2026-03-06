@@ -43,12 +43,7 @@ const Footer: React.FC = () => {
   const platformLinks = [
     { label: lang === "en" ? "Browse Services"  : "Ver Servicios",       path: "/services"          },
     { label: lang === "en" ? "Find a Developer" : "Encontrar Desarrollador", path: "/developers"    },
-    { label: lang === "en" ? "Post a Project"   : "Publicar Proyecto",   path: "/post-project"      },
-  ];
-
-  const companyLinks = [
-    { label: lang === "en" ? "About"   : "Nosotros",    path: "/about"   },
-    { label: lang === "en" ? "Blog"    : "Blog",        path: "/blog"    },
+    { label: lang === "en" ? "Post a Project"   : "Publicar Proyecto",   path: "/pub-project"      },
     { label: lang === "en" ? "FAQ"     : "Preguntas",   path: "/faq"     },
   ];
 
@@ -74,7 +69,7 @@ const Footer: React.FC = () => {
 
       <div className="relative max-w-7xl mx-auto px-6 pt-16 pb-8">
       
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-12 mb-14">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-12 mb-14">
 
           
           <div className="lg:col-span-1">
@@ -128,13 +123,6 @@ const Footer: React.FC = () => {
           </div>
 
           <div>
-            <FooterHeading label={lang === "en" ? "Company" : "Empresa"} />
-            <nav className="flex flex-col gap-3.5">
-              {companyLinks.map((l) => <FLink key={l.path} to={l.path}>{l.label}</FLink>)}
-            </nav>
-          </div>
-
-          <div>
             <FooterHeading label={lang === "en" ? "Stay in the loop" : "Mantente al día"} />
             <p className="text-xs text-gray-500 mb-4 leading-relaxed">
               {lang === "en"
@@ -145,7 +133,7 @@ const Footer: React.FC = () => {
             <div className="flex gap-2 mb-6">
               <input
                 type="email"
-                placeholder={lang === "en" ? "your@email.com" : "tu@correo.com"}
+                placeholder={lang === "en" ? "username@email.com" : "usuario@correo.com"}
                 className="flex-1 min-w-0 px-3 py-2 text-xs bg-violet-950/30 border border-violet-900/50 rounded text-gray-300 placeholder-gray-600 focus:outline-none focus:border-violet-500/70 transition-colors"
               />
               <button className="px-3 py-2 bg-violet-500 hover:bg-violet-400 text-black text-xs font-black rounded transition-colors shrink-0">

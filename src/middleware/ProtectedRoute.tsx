@@ -11,23 +11,33 @@ interface Props {
 const ProtectedRoute: React.FC<Props> = ({ children, guestOnly = false }) => {
   const { user, setUser } = useUser();
   const location = useLocation();
-  const [checking, setChecking] = useState(true);
+
+  const [checking,      setChecking]      = useState(true);
   const [authenticated, setAuthenticated] = useState(false);
+
+  const [resolvedRole, setResolvedRole] = useState<"developer" | "business" | null>(null);
+  const [resolvedSub,  setResolvedSub]  = useState<string | null>(null);
 
   useEffect(() => {
     const verify = async () => {
       try {
         const cognitoUser = await getCurrentUser();
+        const userAttr    = await fetchUserAttributes();
+
+        const role = (userAttr["custom:userRole"] ?? "business") as "developer" | "business";
+        const sub  = cognitoUser.userId;
+
         setAuthenticated(true);
-        console.log("Current user", cognitoUser);
-        const userAttr = await fetchUserAttributes();
-        console.log("User attrs" , userAttr);
+        setResolvedRole(role);
+        setResolvedSub(sub);
+
         if (!user) {
           setUser({
-            username: userAttr.preferred_username?? "",
-            email: userAttr.email ?? "",
-            role: userAttr['custom:userRole'] as "developer" | "business",
-            sub: cognitoUser.userId,
+            username:    userAttr.preferred_username ?? cognitoUser.username,
+            email:       userAttr.email ?? "",
+            role,
+            sub,
+            displayName: userAttr.preferred_username ?? cognitoUser.username,
           });
         }
       } catch {
@@ -54,7 +64,11 @@ const ProtectedRoute: React.FC<Props> = ({ children, guestOnly = false }) => {
   }
 
   if (guestOnly && authenticated) {
-    return <Navigate to="/user-page" replace />;
+    const home =
+      resolvedRole === "developer"
+        ? `/user/developer/${resolvedSub}`  
+        : "/user/business";
+    return <Navigate to={home} replace />;
   }
 
   if (!guestOnly && !authenticated) {

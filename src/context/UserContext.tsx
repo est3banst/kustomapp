@@ -1,4 +1,4 @@
-import { createContext, useState, useContext, type ReactNode } from "react";
+import { createContext, useState, useContext, type ReactNode, type Dispatch, type SetStateAction } from "react";
 
 export interface User {
   username: string;
@@ -13,7 +13,7 @@ export interface User {
 
 interface UserContextType {
   user: User | null;
-  setUser: (user: User | null) => void;
+  setUser: Dispatch<SetStateAction<User | null>>;
   isAuthenticated: boolean;
 }
 

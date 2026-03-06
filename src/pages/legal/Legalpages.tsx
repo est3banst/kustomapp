@@ -6,13 +6,15 @@ import Footer from "@/components/Footer";
 
 interface Section { heading: string; body: string | string[] }
 
+
 const LegalPage: React.FC<{
   badge: string;
   title: string;
   updated: string;
+  questions: string;
   intro: string;
   sections: Section[];
-}> = ({ badge, title, updated, intro, sections }) => (
+}> = ({ badge, title, updated, questions, intro, sections }) => (
   <>
     <Nav />
     <div className="min-h-screen bg-black pt-24 pb-0 relative overflow-hidden">
@@ -69,8 +71,8 @@ const LegalPage: React.FC<{
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 text-xs text-gray-600">
           <span>
         
-            {`Questions? `}
-            <a href="mailto:info@kustomdev.com" className="text-violet-400 hover:text-violet-300 transition-colors">info@kustomdev.com</a>
+            {questions}
+            <a href="mailto:info@kustomdev.com" className="text-violet-400 px-2 hover:text-violet-300 transition-colors">info@kustomdev.com</a>
           </span>
           <div className="flex gap-4">
             <Link to="/privacy" className="hover:text-gray-400 transition-colors">Privacy</Link>
@@ -93,6 +95,7 @@ export const PrivacyPolicy: React.FC = () => {
     <LegalPage
       badge={en ? "Legal" : "Legal"}
       title={en ? "Privacy Policy" : "Política de Privacidad"}
+      questions={en? "Questions ?" : "Preguntas ? "}
       updated={en ? "Last updated: January 2025" : "Última actualización: enero 2025"}
       intro={en
         ? "Kustom ('we', 'us', 'our') is committed to protecting your personal data. This policy explains what information we collect, how we use it, and your rights regarding your data."
@@ -184,6 +187,7 @@ export const TermsOfService: React.FC = () => {
     <LegalPage
       badge={en ? "Legal" : "Legal"}
       title={en ? "Terms of Service" : "Términos del Servicio"}
+      questions={en? "Questions ?" : "Preguntas ? "}
       updated={en ? "Last updated: January 2025" : "Última actualización: enero 2025"}
       intro={en
         ? "By creating an account or using Kustom, you agree to these Terms of Service. Please read them carefully. If you do not agree, do not use the platform."
@@ -287,6 +291,7 @@ export const CookiePolicy: React.FC = () => {
     <LegalPage
       badge={en ? "Legal" : "Legal"}
       title={en ? "Cookie Policy" : "Política de Cookies"}
+      questions={en? "Questions ?" : "Preguntas ? "}
       updated={en ? "Last updated: January 2025" : "Última actualización: enero 2025"}
       intro={en
         ? "Kustom uses cookies and similar technologies to keep the platform working, remember your preferences, and understand how people use our site. This policy explains what we use and why."

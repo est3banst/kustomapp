@@ -95,8 +95,7 @@ const Nav: React.FC = () => {
     { label: lang === "en" ? "Services" : "Servicios",   path: "/services"  },
     // { label: lang === "en" ? "Projects" : "Proyectos",   path: "/portfolio" },
     { label: lang === "en" ? "For Devs" : "Devs",        path: "/developers" },
-    { label: lang === "en" ? "Help" : "Ayuda", path: "/help" },
-    { label: lang === "en" ? "Contact"  : "Contacto",    path: "/contact"   },
+    { label: lang === "en" ? "Help" : "Ayuda",      path: "/help" },
   ];
 
   const isActive = (path: string) =>

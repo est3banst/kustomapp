@@ -24,7 +24,7 @@ interface DevProfile {
 
 // Placeholder dev profiles — swap with API data
 const DEVS: DevProfile[] = [
-  { id: 1, name: "Alex M.",      role: "Full-stack Developer",    avatar: "A", rating: 5.0, reviews: 34, rate: "$65/hr",  skills: ["React", "Node.js", "TypeScript", "AWS"],        available: true,  location: "Buenos Aires", projects: 28 },
+  { id: 1, name: "Esteban M.",      role: "Full-stack Developer",    avatar: "A", rating: 5.0, reviews: 34, rate: "$65/hr",  skills: ["React", "Node.js", "TypeScript", "AWS"],        available: true,  location: "Buenos Aires", projects: 28 },
   { id: 2, name: "Sofía R.",     role: "Frontend Specialist",     avatar: "S", rating: 4.9, reviews: 21, rate: "$50/hr",  skills: ["React", "Next.js", "Tailwind", "Figma"],         available: true,  location: "Montevideo",   projects: 19 },
   { id: 3, name: "Matías G.",    role: "Backend Engineer",        avatar: "M", rating: 4.8, reviews: 47, rate: "$70/hr",  skills: ["Python", "Django", "PostgreSQL", "Docker"],      available: false, location: "Córdoba",      projects: 41 },
   { id: 4, name: "Laura V.",     role: "E-commerce Developer",    avatar: "L", rating: 5.0, reviews: 18, rate: "$55/hr",  skills: ["WooCommerce", "Shopify", "React", "PHP"],        available: true,  location: "Santiago",     projects: 15 },

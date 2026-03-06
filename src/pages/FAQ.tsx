@@ -4,7 +4,7 @@ import { useLanguage } from "@/context/LanguageContext";
 import Nav from "@/components/Nav";
 import Footer from "@/components/Footer";
 
-type Category = "general" | "business" | "developer" | "billing" | "security";
+type Category = "general" | "business" | "developer" | "security";
 
 interface FAQItem {
   q: string;
@@ -51,11 +51,6 @@ const FAQ: React.FC = () => {
       id: "developer",
       label: lang === "en" ? "For Developers" : "Para Devs",
       icon: <svg xmlns="http://www.w3.org/2000/svg" width={14} height={14} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5}><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg>,
-    },
-    {
-      id: "billing",
-      label: lang === "en" ? "Billing & Payments" : "Pagos",
-      icon: <svg xmlns="http://www.w3.org/2000/svg" width={14} height={14} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5}><rect x={1} y={4} width={22} height={16} rx={2}/><line x1={1} y1={10} x2={23} y2={10}/></svg>,
     },
     {
       id: "security",
@@ -159,38 +154,6 @@ const FAQ: React.FC = () => {
         a: lang === "en"
           ? "You'll be notified immediately and asked to present your side along with any deliverables, communications, and relevant files. Our team reviews all evidence objectively and reaches a decision within 5 business days. Disputes are rare and usually resolved amicably."
           : "Serás notificado de inmediato y se te pedirá que presentes tu versión junto con los entregables, comunicaciones y archivos relevantes. Nuestro equipo revisa toda la evidencia objetivamente y llega a una decisión en 5 días hábiles. Las disputas son raras y generalmente se resuelven amigablemente.",
-      },
-    ],
-    billing: [
-      {
-        q: lang === "en" ? "What payment methods are accepted?" : "¿Qué métodos de pago se aceptan?",
-        a: lang === "en"
-          ? "We accept all major credit and debit cards via Stripe, as well as PayPal. For large enterprise projects, bank transfers may be arranged. In supported regions, MercadoPago is also available."
-          : "Aceptamos todas las tarjetas de crédito y débito principales a través de Stripe, así como PayPal. Para proyectos empresariales grandes, se pueden acordar transferencias bancarias. En regiones compatibles, MercadoPago también está disponible.",
-      },
-      {
-        q: lang === "en" ? "How does the escrow system work?" : "¿Cómo funciona el sistema de custodia?",
-        a: lang === "en"
-          ? "When you fund a project milestone, your payment is held securely by Kustom. The developer can see the funds are in escrow, which motivates delivery. Once you approve the milestone, funds are released to the developer within 24 hours. You never pay before you're satisfied."
-          : "Cuando financiás un hito del proyecto, tu pago es retenido de forma segura por Kustom. El desarrollador puede ver que los fondos están en custodia, lo que motiva la entrega. Una vez que aprobás el hito, los fondos se liberan al desarrollador en 24 horas. Nunca pagás antes de estar satisfecho.",
-      },
-      {
-        q: lang === "en" ? "Are there any hidden fees?" : "¿Hay cargos ocultos?",
-        a: lang === "en"
-          ? "No hidden fees. Businesses pay only for the agreed project scope. Developers pay a transparent 10% platform fee on completed milestones — this is deducted automatically from the payout, so developers set their rates accordingly."
-          : "Sin cargos ocultos. Los negocios pagan solo por el alcance del proyecto acordado. Los desarrolladores pagan una comisión de plataforma transparente del 10% sobre los hitos completados — esto se deduce automáticamente del pago, por lo que los desarrolladores establecen sus tarifas en consecuencia.",
-      },
-      {
-        q: lang === "en" ? "Can I get a refund?" : "¿Puedo obtener un reembolso?",
-        a: lang === "en"
-          ? "Funds held in escrow for a milestone that has not yet been approved can be refunded. Once you've approved a milestone and funds have been released to the developer, refunds are handled through the dispute process. We assess each case individually and fairly."
-          : "Los fondos retenidos en custodia para un hito que aún no fue aprobado pueden ser reembolsados. Una vez que aprobaste un hito y los fondos se liberaron al desarrollador, los reembolsos se manejan a través del proceso de disputa. Evaluamos cada caso de forma individual y justa.",
-      },
-      {
-        q: lang === "en" ? "How do developers withdraw their earnings?" : "¿Cómo retiran sus ganancias los desarrolladores?",
-        a: lang === "en"
-          ? "Developers can withdraw from their Kustom wallet to a linked bank account or PayPal at any time, with a minimum withdrawal of $20. Withdrawals are processed within 1–3 business days depending on your bank and region."
-          : "Los desarrolladores pueden retirar desde su billetera Kustom a una cuenta bancaria vinculada o PayPal en cualquier momento, con un retiro mínimo de $20. Los retiros se procesan en 1–3 días hábiles según tu banco y región.",
       },
     ],
     security: [

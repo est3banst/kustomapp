@@ -1,4 +1,5 @@
-import { useNavigate } from "react-router-dom";
+import { useEffect } from "react";
+import { Link, useNavigate } from "react-router-dom";
 import { signOut } from "aws-amplify/auth";
 import { useUser } from "@/context/UserContext";
 import { useLanguage } from "@/context/LanguageContext";
@@ -21,8 +22,8 @@ const ActionCard: React.FC<{
   href: string;
   icon: React.ReactNode;
 }> = ({ title, description, cta, href, icon }) => (
-  <a
-    href={href}
+  <Link
+    to={href}
     className="relative flex flex-col gap-3 p-6 border border-violet-900/40 bg-violet-950/10 rounded-lg overflow-hidden group hover:border-violet-600/50 hover:bg-violet-950/20 transition-all duration-200"
   >
     <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-violet-600/40 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
@@ -37,17 +38,23 @@ const ActionCard: React.FC<{
         <path d="M5 12h14M12 5l7 7-7 7" />
       </svg>
     </div>
-  </a>
+  </Link>
 );
 
 const UserPage: React.FC = () => {
   const { user, setUser } = useUser();
-  const { lang } = useLanguage();
-  const navigate = useNavigate();
+  const { lang }          = useLanguage();
+  const navigate          = useNavigate();
 
-  const isDev      = user?.role === "developer";
+  const isDev       = user?.role === "developer";
   const displayName = user?.displayName ?? user?.username ?? "User";
-  const initial    = displayName[0]?.toUpperCase() ?? "U";
+  const initial     = displayName[0]?.toUpperCase() ?? "U";
+
+  useEffect(() => {
+    if (isDev && user?.sub) {
+      navigate(`/user/developer/${user.sub}`, { replace: true });
+    }
+  }, [isDev, user?.sub, navigate]);
 
   const handleSignOut = async () => {
     try {
@@ -62,59 +69,60 @@ const UserPage: React.FC = () => {
 
   const stats = isDev
     ? [
-        { value: "0",   label: lang === "en" ? "Active projects" : "Proyectos activos",  icon: <svg xmlns="http://www.w3.org/2000/svg" width={18} height={18} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5}><rect x={3} y={3} width={7} height={7}/><rect x={14} y={3} width={7} height={7}/><rect x={14} y={14} width={7} height={7}/><rect x={3} y={14} width={7} height={7}/></svg> },
-        { value: "0",   label: lang === "en" ? "Proposals sent"  : "Propuestas enviadas", icon: <svg xmlns="http://www.w3.org/2000/svg" width={18} height={18} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5}><line x1={22} y1={2} x2={11} y2={13}/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg> },
-        { value: "$0",  label: lang === "en" ? "Total earned"    : "Total ganado",         icon: <svg xmlns="http://www.w3.org/2000/svg" width={18} height={18} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5}><line x1={12} y1={1} x2={12} y2={23}/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg> },
+        { value: "0",  label: lang === "en" ? "Active projects" : "Proyectos activos",   icon: <svg xmlns="http://www.w3.org/2000/svg" width={18} height={18} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5}><rect x={3} y={3} width={7} height={7}/><rect x={14} y={3} width={7} height={7}/><rect x={14} y={14} width={7} height={7}/><rect x={3} y={14} width={7} height={7}/></svg> },
+        { value: "0",  label: lang === "en" ? "Proposals sent"  : "Propuestas enviadas", icon: <svg xmlns="http://www.w3.org/2000/svg" width={18} height={18} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5}><line x1={22} y1={2} x2={11} y2={13}/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg> },
+        { value: "$0", label: lang === "en" ? "Total earned"    : "Total ganado",         icon: <svg xmlns="http://www.w3.org/2000/svg" width={18} height={18} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5}><line x1={12} y1={1} x2={12} y2={23}/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg> },
       ]
     : [
-        { value: "0",   label: lang === "en" ? "Active projects" : "Proyectos activos",   icon: <svg xmlns="http://www.w3.org/2000/svg" width={18} height={18} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5}><rect x={3} y={3} width={7} height={7}/><rect x={14} y={3} width={7} height={7}/><rect x={14} y={14} width={7} height={7}/><rect x={3} y={14} width={7} height={7}/></svg> },
-        { value: "0",   label: lang === "en" ? "Developers hired": "Devs contratados",    icon: <svg xmlns="http://www.w3.org/2000/svg" width={18} height={18} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5}><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx={9} cy={7} r={4}/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg> },
-        { value: "0",   label: lang === "en" ? "Open requests"   : "Solicitudes abiertas", icon: <svg xmlns="http://www.w3.org/2000/svg" width={18} height={18} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5}><circle cx={12} cy={12} r={10}/><line x1={12} y1={8} x2={12} y2={12}/><line x1={12} y1={16} x2={12} y2={16}/></svg> },
+        { value: "0",  label: lang === "en" ? "Active projects"  : "Proyectos activos",    icon: <svg xmlns="http://www.w3.org/2000/svg" width={18} height={18} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5}><rect x={3} y={3} width={7} height={7}/><rect x={14} y={3} width={7} height={7}/><rect x={14} y={14} width={7} height={7}/><rect x={3} y={14} width={7} height={7}/></svg> },
+        { value: "0",  label: lang === "en" ? "Developers hired" : "Devs contratados",     icon: <svg xmlns="http://www.w3.org/2000/svg" width={18} height={18} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5}><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx={9} cy={7} r={4}/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg> },
+        { value: "0",  label: lang === "en" ? "Open requests"    : "Solicitudes abiertas", icon: <svg xmlns="http://www.w3.org/2000/svg" width={18} height={18} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5}><circle cx={12} cy={12} r={10}/><line x1={12} y1={8} x2={12} y2={12}/><line x1={12} y1={16} x2={12} y2={16}/></svg> },
       ];
 
   const actions = isDev
     ? [
         {
-          title:       lang === "en" ? "Browse projects"    : "Ver proyectos",
+          title:       lang === "en" ? "Browse projects" : "Ver proyectos",
           description: lang === "en" ? "Find businesses looking for your skills" : "Encontrá negocios que buscan tus habilidades",
-          cta:         lang === "en" ? "Explore"            : "Explorar",
+          cta:         lang === "en" ? "Explore"         : "Explorar",
           href:        "/projects",
           icon: <svg xmlns="http://www.w3.org/2000/svg" width={22} height={22} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5}><circle cx={11} cy={11} r={8}/><line x1={21} y1={21} x2={16.65} y2={16.65}/></svg>,
         },
         {
-          title:       lang === "en" ? "My profile"         : "Mi perfil",
+          title:       lang === "en" ? "My profile"      : "Mi perfil",
           description: lang === "en" ? "Update your skills, portfolio and rates" : "Actualizá tus habilidades, portfolio y tarifas",
-          cta:         lang === "en" ? "Edit"               : "Editar",
-          href:        "/profile",
+          cta:         lang === "en" ? "Edit"            : "Editar",
+          // Scoped to /user/developer/:sub/profile — unique per Cognito user
+          href:        user?.sub ? `/user/developer/${user.sub}/profile` : "/login",
           icon: <svg xmlns="http://www.w3.org/2000/svg" width={22} height={22} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5}><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx={12} cy={7} r={4}/></svg>,
         },
         {
-          title:       lang === "en" ? "Earnings"           : "Ganancias",
-          description: lang === "en" ? "Track payments and invoices"             : "Seguí tus pagos y facturas",
-          cta:         lang === "en" ? "View"               : "Ver",
+          title:       lang === "en" ? "Earnings"        : "Ganancias",
+          description: lang === "en" ? "Track payments and invoices" : "Seguí tus pagos y facturas",
+          cta:         lang === "en" ? "View"            : "Ver",
           href:        "/earnings",
           icon: <svg xmlns="http://www.w3.org/2000/svg" width={22} height={22} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5}><rect x={1} y={4} width={22} height={16} rx={2}/><line x1={1} y1={10} x2={23} y2={10}/></svg>,
         },
       ]
     : [
         {
-          title:       lang === "en" ? "Post a project"     : "Publicar proyecto",
+          title:       lang === "en" ? "Post a project"  : "Publicar proyecto",
           description: lang === "en" ? "Describe what you need and get proposals" : "Describí lo que necesitás y recibí propuestas",
-          cta:         lang === "en" ? "Post"               : "Publicar",
-          href:        "/post-project",
+          cta:         lang === "en" ? "Post"            : "Publicar",
+          href:        "/pub-project",
           icon: <svg xmlns="http://www.w3.org/2000/svg" width={22} height={22} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5}><circle cx={12} cy={12} r={10}/><line x1={12} y1={8} x2={12} y2={16}/><line x1={8} y1={12} x2={16} y2={12}/></svg>,
         },
         {
-          title:       lang === "en" ? "Find developers"    : "Buscar desarrolladores",
-          description: lang === "en" ? "Browse vetted devs by skill and rate"    : "Explorá devs verificados por habilidad y tarifa",
-          cta:         lang === "en" ? "Browse"             : "Explorar",
+          title:       lang === "en" ? "Find developers" : "Buscar desarrolladores",
+          description: lang === "en" ? "Browse vetted devs by skill and rate" : "Explorá devs verificados por habilidad y tarifa",
+          cta:         lang === "en" ? "Browse"          : "Explorar",
           href:        "/developers",
           icon: <svg xmlns="http://www.w3.org/2000/svg" width={22} height={22} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5}><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg>,
         },
         {
-          title:       lang === "en" ? "My projects"        : "Mis proyectos",
-          description: lang === "en" ? "Track progress on all your active work"  : "Seguí el progreso de todo tu trabajo activo",
-          cta:         lang === "en" ? "View"               : "Ver",
+          title:       lang === "en" ? "My projects"     : "Mis proyectos",
+          description: lang === "en" ? "Track progress on all your active work" : "Seguí el progreso de todo tu trabajo activo",
+          cta:         lang === "en" ? "View"            : "Ver",
           href:        "/my-projects",
           icon: <svg xmlns="http://www.w3.org/2000/svg" width={22} height={22} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5}><rect x={3} y={3} width={7} height={7}/><rect x={14} y={3} width={7} height={7}/><rect x={14} y={14} width={7} height={7}/><rect x={3} y={14} width={7} height={7}/></svg>,
         },
@@ -199,12 +207,13 @@ const UserPage: React.FC = () => {
               {lang === "en" ? "Update email, password or notification preferences" : "Actualizá email, contraseña o preferencias de notificaciones"}
             </p>
           </div>
-          <a
-            href="/settings"
+
+          <Link
+            to="/settings"
             className="shrink-0 px-5 py-2.5 text-xs font-black tracking-widest uppercase text-violet-300 border border-violet-700/50 hover:border-violet-500 hover:bg-violet-900/20 rounded transition-all"
           >
             {lang === "en" ? "Settings" : "Ajustes"}
-          </a>
+          </Link>
         </div>
       </div>
     </div>
