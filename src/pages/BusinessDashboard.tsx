@@ -4,82 +4,10 @@ import { signOut } from "aws-amplify/auth";
 import { useUser } from "@/context/UserContext";
 import { useLanguage } from "@/context/LanguageContext";
 import Nav from "@/components/Nav";
+import { fetchProjects, deleteProject, type Project, type ProjectStatus } from "@/api/projects";
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Types
-// ─────────────────────────────────────────────────────────────────────────────
-type ProjectStatus = "open" | "in_progress" | "review" | "completed" | "cancelled";
-
-interface Project {
-  id:          string;
-  title:       string;
-  category:    string;
-  budget:      string;
-  timeline:    string;
-  status:      ProjectStatus;
-  proposals:   number;
-  postedAt:    string;        // ISO string — format on render
-  visibility:  "public" | "invite";
-  description: string;
-}
-
-// ─────────────────────────────────────────────────────────────────────────────
-// Placeholder data — replace body of fetchProjects() with real API call
-// ─────────────────────────────────────────────────────────────────────────────
-const MOCK_PROJECTS: Project[] = [
-  {
-    id:          "proj_001",
-    title:       "E-commerce store for clothing brand",
-    category:    "ecommerce",
-    budget:      "$500 – $2,000",
-    timeline:    "1 – 3 months",
-    status:      "open",
-    proposals:   4,
-    postedAt:    new Date(Date.now() - 1000 * 60 * 60 * 24 * 2).toISOString(),
-    visibility:  "public",
-    description: "Need a full Shopify or WooCommerce store with custom theme...",
-  },
-  {
-    id:          "proj_002",
-    title:       "Landing page redesign",
-    category:    "landing",
-    budget:      "Under $500",
-    timeline:    "Within 1 month",
-    status:      "in_progress",
-    proposals:   7,
-    postedAt:    new Date(Date.now() - 1000 * 60 * 60 * 24 * 10).toISOString(),
-    visibility:  "public",
-    description: "Redesign of our current landing page to improve conversion...",
-  },
-  {
-    id:          "proj_003",
-    title:       "Internal inventory management app",
-    category:    "webapp",
-    budget:      "$2,000 – $10,000",
-    timeline:    "3 – 6 months",
-    status:      "review",
-    proposals:   2,
-    postedAt:    new Date(Date.now() - 1000 * 60 * 60 * 24 * 20).toISOString(),
-    visibility:  "invite",
-    description: "Custom web app to manage inventory across 3 warehouses...",
-  },
-];
-
-// ─────────────────────────────────────────────────────────────────────────────
-// API stub — swap these with your real endpoints
-// ─────────────────────────────────────────────────────────────────────────────
-async function fetchProjects(_userId: string): Promise<Project[]> {
-  // TODO: replace with real API call, e.g.:
-  // const res = await fetch(`/api/projects?userId=${_userId}`, {
-  //   headers: { Authorization: `Bearer ${token}` },
-  // });
-  // return res.json();
-  await new Promise((r) => setTimeout(r, 600)); // simulate latency
-  return MOCK_PROJECTS;
-}
-
-// ─────────────────────────────────────────────────────────────────────────────
-// Helpers
+// Constants
 // ─────────────────────────────────────────────────────────────────────────────
 const STATUS_CFG: Record<ProjectStatus, { label_en: string; label_es: string; color: string }> = {
   open:        { label_en: "Open",        label_es: "Abierto",     color: "text-emerald-400 border-emerald-800/50 bg-emerald-950/20" },
@@ -90,23 +18,23 @@ const STATUS_CFG: Record<ProjectStatus, { label_en: string; label_es: string; co
 };
 
 const CATEGORY_LABELS: Record<string, { en: string; es: string }> = {
-  landing:   { en: "Landing page",   es: "Landing page"  },
-  ecommerce: { en: "E-commerce",     es: "E-commerce"    },
-  webapp:    { en: "Web app",        es: "App web"       },
-  mobile:    { en: "Mobile",         es: "Móvil"         },
-  api:       { en: "API / Backend",  es: "API / Backend" },
-  support:   { en: "Support",        es: "Soporte"       },
-  design:    { en: "Design",         es: "Diseño"        },
-  other:     { en: "Other",          es: "Otro"          },
+  landing:   { en: "Landing page",  es: "Landing page"  },
+  ecommerce: { en: "E-commerce",    es: "E-commerce"    },
+  webapp:    { en: "Web app",       es: "App web"       },
+  mobile:    { en: "Mobile",        es: "Móvil"         },
+  api:       { en: "API / Backend", es: "API / Backend" },
+  support:   { en: "Support",       es: "Soporte"       },
+  design:    { en: "Design",        es: "Diseño"        },
+  other:     { en: "Other",         es: "Otro"          },
 };
 
 function relativeDate(iso: string, lang: string): string {
   const diff = Date.now() - new Date(iso).getTime();
   const days = Math.floor(diff / 86_400_000);
-  if (days === 0) return lang === "en" ? "Today"            : "Hoy";
-  if (days === 1) return lang === "en" ? "Yesterday"        : "Ayer";
-  if (days < 7)  return lang === "en" ? `${days}d ago`      : `Hace ${days}d`;
-  if (days < 30) return lang === "en" ? `${Math.floor(days/7)}w ago` : `Hace ${Math.floor(days/7)} sem`;
+  if (days === 0) return lang === "en" ? "Today"     : "Hoy";
+  if (days === 1) return lang === "en" ? "Yesterday" : "Ayer";
+  if (days < 7)  return lang === "en" ? `${days}d ago`                  : `Hace ${days}d`;
+  if (days < 30) return lang === "en" ? `${Math.floor(days/7)}w ago`    : `Hace ${Math.floor(days/7)} sem`;
   return new Date(iso).toLocaleDateString(lang === "en" ? "en-US" : "es-AR", { month: "short", day: "numeric" });
 }
 
@@ -125,19 +53,33 @@ const StatCard: React.FC<{ value: string | number; label: string; icon: React.Re
 );
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Project row (table view)
+// Project row
 // ─────────────────────────────────────────────────────────────────────────────
 const ProjectRow: React.FC<{
   project: Project;
   lang: string;
   onDelete: (id: string) => void;
 }> = ({ project, lang, onDelete }) => {
-  const [menuOpen, setMenuOpen] = useState(false);
+  const [menuOpen,  setMenuOpen]  = useState(false);
+  const [deleting,  setDeleting]  = useState(false);
   const cfg = STATUS_CFG[project.status];
   const cat = CATEGORY_LABELS[project.category] ?? { en: project.category, es: project.category };
 
+  const handleDelete = async () => {
+    setMenuOpen(false);
+    setDeleting(true);
+    try {
+      await deleteProject(project.id);
+      onDelete(project.id);
+    } catch (err) {
+      console.error("Delete failed:", err);
+    } finally {
+      setDeleting(false);
+    }
+  };
+
   return (
-    <div className="relative flex flex-col sm:flex-row sm:items-center justify-between gap-3 py-4 border-b border-violet-900/20 last:border-0 hover:bg-violet-950/10 px-3 -mx-3 rounded transition-colors group">
+    <div className={`relative flex flex-col sm:flex-row sm:items-center justify-between gap-3 py-4 border-b border-violet-900/20 last:border-0 hover:bg-violet-950/10 px-3 -mx-3 rounded transition-colors group ${deleting ? "opacity-40 pointer-events-none" : ""}`}>
       <div className="flex flex-col gap-1 flex-1 min-w-0">
         <div className="flex items-center gap-2 flex-wrap">
           <span className="text-sm font-semibold text-white truncate">{project.title}</span>
@@ -150,28 +92,18 @@ const ProjectRow: React.FC<{
         </div>
         <div className="flex items-center gap-3 flex-wrap">
           <span className="text-[10px] text-gray-600">{lang === "en" ? cat.en : cat.es}</span>
+          {project.budget   && <><span className="text-[10px] text-gray-700">·</span><span className="text-[10px] text-gray-600">{project.budget}</span></>}
           <span className="text-[10px] text-gray-700">·</span>
-          <span className="text-[10px] text-gray-600">{project.budget}</span>
-          <span className="text-[10px] text-gray-700">·</span>
-          <span className="text-[10px] text-gray-600">{relativeDate(project.postedAt, lang)}</span>
+          <span className="text-[10px] text-gray-600">{relativeDate(project.posted_at, lang)}</span>
         </div>
       </div>
 
       <div className="flex items-center gap-3 shrink-0">
-        {/* Proposals badge */}
-        {project.proposals > 0 && (
-          <span className="flex items-center gap-1.5 px-2 py-1 rounded-lg bg-violet-900/30 border border-violet-800/40 text-[10px] font-black text-violet-300">
-            <svg xmlns="http://www.w3.org/2000/svg" width={10} height={10} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
-            {project.proposals} {lang === "en" ? "proposals" : "propuestas"}
-          </span>
-        )}
 
-        {/* Status badge */}
         <span className={`px-2 py-0.5 rounded text-[9px] font-black tracking-widest uppercase border ${cfg.color}`}>
           {lang === "en" ? cfg.label_en : cfg.label_es}
         </span>
 
-        {/* Actions menu */}
         <div className="relative">
           <button
             onClick={() => setMenuOpen(!menuOpen)}
@@ -190,10 +122,10 @@ const ProjectRow: React.FC<{
                   </button>
                 </Link>
                 <button
-                  onClick={() => { onDelete(project.id); setMenuOpen(false); }}
+                  onClick={handleDelete}
                   className="w-full flex items-center gap-2.5 px-3 py-2.5 text-xs text-red-400 hover:text-red-300 hover:bg-red-950/20 transition-colors text-left"
                 >
-                  <svg xmlns="http://www.w3.org/2000/svg" width={12} height={12} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/></svg>
+                  <svg xmlns="http://www.w3.org/2000/svg" width={12} height={12} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/></svg>
                   {lang === "en" ? "Delete" : "Eliminar"}
                 </button>
               </div>
@@ -206,7 +138,7 @@ const ProjectRow: React.FC<{
 };
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Empty state
+// Empty + filter helpers
 // ─────────────────────────────────────────────────────────────────────────────
 const EmptyProjects: React.FC<{ lang: string }> = ({ lang }) => (
   <div className="flex flex-col items-center gap-5 py-16 text-center">
@@ -214,13 +146,9 @@ const EmptyProjects: React.FC<{ lang: string }> = ({ lang }) => (
       <svg xmlns="http://www.w3.org/2000/svg" width={28} height={28} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5}><rect x={3} y={3} width={7} height={7}/><rect x={14} y={3} width={7} height={7}/><rect x={14} y={14} width={7} height={7}/><rect x={3} y={14} width={7} height={7}/></svg>
     </div>
     <div>
-      <h3 className="text-sm font-black text-white mb-1">
-        {lang === "en" ? "No projects yet" : "Sin proyectos aún"}
-      </h3>
+      <h3 className="text-sm font-black text-white mb-1">{lang === "en" ? "No projects yet" : "Sin proyectos aún"}</h3>
       <p className="text-xs text-gray-600 max-w-xs">
-        {lang === "en"
-          ? "Post your first project and start receiving proposals from vetted developers."
-          : "Publicá tu primer proyecto y empezá a recibir propuestas de desarrolladores verificados."}
+        {lang === "en" ? "Post your first project and start receiving proposals from vetted developers." : "Publicá tu primer proyecto y empezá a recibir propuestas de desarrolladores verificados."}
       </p>
     </div>
     <Link to="/pub-project">
@@ -231,18 +159,13 @@ const EmptyProjects: React.FC<{ lang: string }> = ({ lang }) => (
   </div>
 );
 
-// ─────────────────────────────────────────────────────────────────────────────
-// Filter tab
-// ─────────────────────────────────────────────────────────────────────────────
 const FilterTab: React.FC<{ label: string; count: number; active: boolean; onClick: () => void }> = ({
   label, count, active, onClick,
 }) => (
   <button
     onClick={onClick}
     className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[10px] font-black tracking-widest uppercase transition-all border ${
-      active
-        ? "border-violet-600/60 bg-violet-950/40 text-violet-300"
-        : "border-transparent text-gray-600 hover:text-gray-400"
+      active ? "border-violet-600/60 bg-violet-950/40 text-violet-300" : "border-transparent text-gray-600 hover:text-gray-400"
     }`}
   >
     {label}
@@ -262,9 +185,10 @@ const BusinessDashboard: React.FC = () => {
   const { lang }          = useLanguage();
   const navigate          = useNavigate();
 
-  const [projects, setProjects] = useState<Project[]>([]);
-  const [loading,  setLoading]  = useState(true);
-  const [filter,   setFilter]   = useState<ProjectStatus | "all">("all");
+  const [projects,  setProjects]  = useState<Project[]>([]);
+  const [loading,   setLoading]   = useState(true);
+  const [fetchError,setFetchError]= useState("");
+  const [filter,    setFilter]    = useState<ProjectStatus | "all">("all");
 
   // Guard: if a developer lands here, send them to their dashboard
   useEffect(() => {
@@ -273,19 +197,18 @@ const BusinessDashboard: React.FC = () => {
     }
   }, [user, navigate]);
 
-  // Fetch projects on mount — replace with real API when ready
+  // Fetch real projects from Cloudflare Worker
   useEffect(() => {
-    if (!user?.sub) return;
     setLoading(true);
-    fetchProjects(user.sub)
+    setFetchError("");
+    fetchProjects()
       .then(setProjects)
+      .catch((err) => setFetchError(err.message ?? "Failed to load projects"))
       .finally(() => setLoading(false));
-  }, [user?.sub]);
+  }, []);
 
-  const handleDelete = (id: string) => {
-    // TODO: call DELETE /api/projects/:id, then refetch
-    setProjects((prev) => prev.filter((p) => p.id !== id));
-  };
+  // Remove from local state after successful API delete (handled in ProjectRow)
+  const handleDelete = (id: string) => setProjects((prev) => prev.filter((p) => p.id !== id));
 
   const filtered = filter === "all" ? projects : projects.filter((p) => p.status === filter);
 
@@ -297,10 +220,8 @@ const BusinessDashboard: React.FC = () => {
     completed:   projects.filter((p) => p.status === "completed").length,
   };
 
-  const totalProposals = projects.reduce((acc, p) => acc + p.proposals, 0);
-
-  const displayName = user?.displayName ?? user?.username ?? "User";
-  const initial     = displayName[0]?.toUpperCase() ?? "U";
+  const displayName    = user?.displayName ?? user?.username ?? "User";
+  const initial        = displayName[0]?.toUpperCase() ?? "U";
 
   const handleSignOut = async () => {
     try {
@@ -308,23 +229,23 @@ const BusinessDashboard: React.FC = () => {
       localStorage.clear();
       setUser(null);
       navigate("/login");
-    } catch (err) {
-      console.error(err);
-    }
+    } catch (err) { console.error(err); }
   };
 
   const t = {
-    overview:    lang === "en" ? "Overview"         : "Resumen",
-    myProjects:  lang === "en" ? "My projects"      : "Mis proyectos",
-    postProject: lang === "en" ? "Post project"     : "Publicar proyecto",
-    signOut:     lang === "en" ? "Sign out"         : "Salir",
-    settings:    lang === "en" ? "Settings"         : "Ajustes",
-    allFilter:   lang === "en" ? "All"              : "Todos",
-    filterOpen:  lang === "en" ? "Open"             : "Abiertos",
-    filterIP:    lang === "en" ? "In progress"      : "En progreso",
-    filterRev:   lang === "en" ? "In review"        : "En revisión",
-    filterDone:  lang === "en" ? "Completed"        : "Completados",
-    loading:     lang === "en" ? "Loading projects…": "Cargando proyectos…",
+    overview:    lang === "en" ? "Overview"          : "Resumen",
+    myProjects:  lang === "en" ? "My projects"       : "Mis proyectos",
+    postProject: lang === "en" ? "Post project"      : "Publicar proyecto",
+    signOut:     lang === "en" ? "Sign out"          : "Salir",
+    settings:    lang === "en" ? "Settings"          : "Ajustes",
+    allFilter:   lang === "en" ? "All"               : "Todos",
+    filterOpen:  lang === "en" ? "Open"              : "Abiertos",
+    filterIP:    lang === "en" ? "In progress"       : "En progreso",
+    filterRev:   lang === "en" ? "In review"         : "En revisión",
+    filterDone:  lang === "en" ? "Completed"         : "Completados",
+    loading:     lang === "en" ? "Loading projects…" : "Cargando proyectos…",
+    error:       lang === "en" ? "Couldn't load projects" : "No se pudieron cargar los proyectos",
+    retry:       lang === "en" ? "Retry"             : "Reintentar",
   };
 
   return (
@@ -385,37 +306,16 @@ const BusinessDashboard: React.FC = () => {
           {/* ── Stats ── */}
           <h2 className="text-[9px] font-black tracking-[0.35em] uppercase text-gray-600 mb-3">{t.overview}</h2>
           <div className="flex flex-wrap gap-3 mb-10">
-            <StatCard
-              value={counts.all}
-              label={lang === "en" ? "Total projects" : "Proyectos totales"}
-              icon={<svg xmlns="http://www.w3.org/2000/svg" width={16} height={16} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5}><rect x={3} y={3} width={7} height={7}/><rect x={14} y={3} width={7} height={7}/><rect x={14} y={14} width={7} height={7}/><rect x={3} y={14} width={7} height={7}/></svg>}
-            />
-            <StatCard
-              value={counts.open}
-              label={lang === "en" ? "Open"           : "Abiertos"}
-              icon={<svg xmlns="http://www.w3.org/2000/svg" width={16} height={16} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5}><circle cx={12} cy={12} r={10}/><polyline points="12 6 12 12 16 14"/></svg>}
-              accent
-            />
-            <StatCard
-              value={counts.in_progress}
-              label={lang === "en" ? "In progress"    : "En progreso"}
-              icon={<svg xmlns="http://www.w3.org/2000/svg" width={16} height={16} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5}><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>}
-            />
-            <StatCard
-              value={totalProposals}
-              label={lang === "en" ? "Proposals rcvd" : "Propuestas rcbd"}
-              icon={<svg xmlns="http://www.w3.org/2000/svg" width={16} height={16} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5}><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>}
-            />
+            <StatCard value={counts.all}         label={lang === "en" ? "Total projects" : "Proyectos totales"} icon={<svg xmlns="http://www.w3.org/2000/svg" width={16} height={16} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5}><rect x={3} y={3} width={7} height={7}/><rect x={14} y={3} width={7} height={7}/><rect x={14} y={14} width={7} height={7}/><rect x={3} y={14} width={7} height={7}/></svg>} />
+            <StatCard value={counts.open}        label={lang === "en" ? "Open"           : "Abiertos"}          icon={<svg xmlns="http://www.w3.org/2000/svg" width={16} height={16} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5}><circle cx={12} cy={12} r={10}/><polyline points="12 6 12 12 16 14"/></svg>} accent />
+            <StatCard value={counts.in_progress} label={lang === "en" ? "In progress"    : "En progreso"}       icon={<svg xmlns="http://www.w3.org/2000/svg" width={16} height={16} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5}><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>} />
+            <StatCard value={counts.completed}   label={lang === "en" ? "Completed"      : "Completados"}       icon={<svg xmlns="http://www.w3.org/2000/svg" width={16} height={16} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5}><polyline points="20 6 9 17 4 12"/></svg>} />
           </div>
 
-          {/* ── Projects ── */}
+          {/* ── Projects table ── */}
           <div className="border border-violet-900/40 bg-violet-950/10 rounded-xl overflow-hidden">
-
-            {/* Table header */}
-            <div className="flex items-center justify-between gap-4 px-5 pt-5 pb-4 border-b border-violet-900/30">
+            <div className="flex items-center justify-between gap-4 px-5 pt-5 pb-4 border-b border-violet-900/30 flex-wrap">
               <h2 className="text-[9px] font-black tracking-[0.35em] uppercase text-gray-600">{t.myProjects}</h2>
-
-              {/* Filter tabs */}
               <div className="flex items-center gap-1 flex-wrap justify-end">
                 <FilterTab label={t.allFilter}  count={counts.all}         active={filter === "all"}         onClick={() => setFilter("all")}         />
                 <FilterTab label={t.filterOpen} count={counts.open}        active={filter === "open"}        onClick={() => setFilter("open")}        />
@@ -431,16 +331,29 @@ const BusinessDashboard: React.FC = () => {
                   <div className="w-5 h-5 border border-violet-500 border-t-transparent rounded-full animate-spin" />
                   <span className="text-xs">{t.loading}</span>
                 </div>
+              ) : fetchError ? (
+                <div className="flex flex-col items-center gap-4 py-16 text-center">
+                  <p className="text-xs text-red-400">{t.error}: {fetchError}</p>
+                  <button
+                    onClick={() => {
+                      if (!user?.sub) return;
+                      setLoading(true); setFetchError("");
+                      fetchProjects().then(setProjects).catch((e) => setFetchError(e.message)).finally(() => setLoading(false));
+                    }}
+                    className="px-4 py-2 text-xs font-black tracking-widest uppercase text-violet-300 border border-violet-700/50 hover:border-violet-500 rounded transition-all"
+                  >
+                    {t.retry}
+                  </button>
+                </div>
               ) : filtered.length === 0 ? (
                 <EmptyProjects lang={lang} />
               ) : (
-                filtered.map((p) => (
-                  <ProjectRow key={p.id} project={p} lang={lang} onDelete={handleDelete} />
-                ))
+                filtered.map((p) => <ProjectRow key={p.id} project={p} lang={lang} onDelete={handleDelete} />)
               )}
             </div>
           </div>
 
+          {/* ── Account strip ── */}
           <div className="mt-8 p-5 border border-violet-900/30 rounded-xl bg-violet-950/10 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
             <div>
               <h3 className="text-xs font-black text-white tracking-tight mb-0.5">
@@ -454,7 +367,6 @@ const BusinessDashboard: React.FC = () => {
               {t.settings}
             </Link>
           </div>
-
         </div>
       </div>
     </>
