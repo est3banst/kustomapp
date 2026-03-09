@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Link, useLocation, useNavigate } from "react-router-dom";
+import { Link, useLocation } from "react-router-dom";
 import { signOut } from "aws-amplify/auth";
 import { useUser } from "@/context/UserContext";
 import { useLanguage } from "@/context/LanguageContext";
@@ -63,7 +63,6 @@ const LangToggle: React.FC = () => {
 const Nav: React.FC = () => {
   const { user, setUser } = useUser();
   const { lang }          = useLanguage();
-  const navigate          = useNavigate();
   const location          = useLocation();
 
   const [scrolled, setScrolled] = useState(false);
@@ -80,9 +79,7 @@ const Nav: React.FC = () => {
   const handleSignOut = async () => {
     try {
       await signOut();
-      navigate("/login", { replace: true });
-      localStorage.clear();
-      setUser(null);
+      setUser(null); // UserContext sets authStatus → unauthenticated, ProtectedRoute redirects
     } catch (err) {
       console.error("Sign out error:", err);
     }
@@ -111,6 +108,7 @@ const Nav: React.FC = () => {
 
       <div className="max-w-7xl mx-auto px-6 h-16 flex items-center justify-between gap-4">
 
+        {/* Logo */}
         <Link to="/" className="flex items-center gap-2 group shrink-0">
           <div className="relative w-8 h-8">
             <div className="absolute inset-0 bg-violet-500 opacity-20 rounded blur-sm group-hover:opacity-40 transition-opacity" />
@@ -121,6 +119,7 @@ const Nav: React.FC = () => {
           <GlitchText text="KUSTOM" className="text-white font-black text-lg tracking-[0.2em] uppercase" />
         </Link>
 
+        {/* Desktop nav links */}
         <nav className="hidden md:flex items-center gap-1 flex-1 justify-center">
           {links.map((link) => (
             <Link
@@ -140,6 +139,7 @@ const Nav: React.FC = () => {
           ))}
         </nav>
 
+        {/* Desktop account area */}
         <div className="hidden md:flex items-center gap-3 shrink-0">
           <LangToggle />
           <div className="w-px h-4 bg-violet-800" />
@@ -155,6 +155,7 @@ const Nav: React.FC = () => {
                 {lang === "en" ? "Dashboard" : "Panel"}
               </Link>
 
+              {/* Avatar pill */}
               <Link
                 to={dashHref}
                 className="flex items-center gap-2 px-3 py-1.5 border border-violet-800/50 rounded bg-violet-950/30 hover:border-violet-600/60 transition-colors"
@@ -186,6 +187,7 @@ const Nav: React.FC = () => {
               </button>
             </>
           ) : (
+            // ── Guest: Sign in (primary) + Sign up (ghost) ──────────────────
             <div className="flex items-center gap-2">
               <Link
                 to="/registro"
@@ -207,6 +209,7 @@ const Nav: React.FC = () => {
           )}
         </div>
 
+        {/* Mobile: lang toggle + hamburger */}
         <div className="md:hidden flex items-center gap-3">
           <LangToggle />
           <button
@@ -230,6 +233,7 @@ const Nav: React.FC = () => {
         </div>
       </div>
 
+      {/* ── Mobile menu ── */}
       <div
         className={`md:hidden overflow-hidden transition-all duration-300 ${
           menuOpen ? "max-h-[28rem] border-b border-violet-900/40" : "max-h-0"
@@ -237,6 +241,7 @@ const Nav: React.FC = () => {
       >
         <div className="px-6 py-4 flex flex-col gap-1">
 
+          {/* Nav links */}
           {links.map((link) => (
             <Link
               key={link.path}
@@ -249,6 +254,7 @@ const Nav: React.FC = () => {
             </Link>
           ))}
 
+          {/* Account section label */}
           <div className="pt-4 pb-1">
             <span className="text-[9px] font-black tracking-[0.35em] uppercase text-gray-700">
               {lang === "en" ? "Account" : "Cuenta"}
@@ -256,8 +262,9 @@ const Nav: React.FC = () => {
           </div>
 
           {user ? (
-
+            // ── Signed in ────────────────────────────────────────────────────
             <div className="flex flex-col gap-2 pb-2">
+              {/* User pill */}
               <div className="flex items-center gap-2 px-3 py-2 border border-violet-900/40 rounded-lg bg-violet-950/20">
                 <div className="w-6 h-6 rounded-full bg-violet-700 flex items-center justify-center text-[10px] font-black text-white shrink-0">
                   {avatarInitial}
@@ -292,6 +299,7 @@ const Nav: React.FC = () => {
               </button>
             </div>
           ) : (
+            // ── Guest ────────────────────────────────────────────────────────
             <div className="flex flex-col gap-2 pb-2">
               <Link
                 to="/login"
