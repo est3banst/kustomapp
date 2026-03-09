@@ -1,0 +1,9 @@
+- name: Application to s3
+  hosts: localhost
+  connection: local
+  gather_facts: false
+  tasks:
+    - name: Upload to S3
+      command: |
+        aws s3 sync ./dist/ s3://kustomapp --delete
+       

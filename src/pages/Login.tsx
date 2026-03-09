@@ -1,9 +1,10 @@
 import { useState } from "react";
 import { Link, useNavigate, useLocation } from "react-router-dom";
-import { signIn } from "aws-amplify/auth";
+import { signIn, fetchUserAttributes, getCurrentUser } from "aws-amplify/auth";
 import { useUser } from "@/context/UserContext";
 import { useLanguage } from "@/context/LanguageContext";
 
+// ── Reusable field ──────────────────────────────────────────────────
 const Field: React.FC<{
   label: string;
   type: string;
@@ -60,13 +61,14 @@ const Field: React.FC<{
   );
 };
 
+// ── Login page ──────────────────────────────────────────────────────
 const Login: React.FC = () => {
   const { setUser } = useUser();
   const { lang } = useLanguage();
   const navigate = useNavigate();
   const location = useLocation();
 
-  const from = (location.state as { from?: Location })?.from?.pathname ?? "/user-page";
+  const from = (location.state as { from?: Location })?.from?.pathname ?? null;
 
   const [email, setEmail]       = useState("");
   const [password, setPassword] = useState("");
@@ -105,11 +107,33 @@ const Login: React.FC = () => {
       const { isSignedIn, nextStep } = await signIn({ username: email, password });
 
       if (isSignedIn) {
-        setUser({ username: email.split("@")[0], email });
-        navigate(from, { replace: true });
+        // Resolve role + sub so we can route to the correct dashboard
+        const [cognitoUser, attrs] = await Promise.all([
+          getCurrentUser(),
+          fetchUserAttributes(),
+        ]);
+        const role = (attrs["custom:userRole"] ?? "business") as "developer" | "business";
+        const sub  = cognitoUser.userId;
+
+        setUser({
+          username:    attrs.preferred_username ?? cognitoUser.username,
+          email:       attrs.email ?? email,
+          role,
+          sub,
+          displayName: attrs.preferred_username ?? cognitoUser.username,
+        });
+
+        // If there was a specific protected page they tried to reach, go there.
+        // Otherwise fall back to their role-specific dashboard.
+        const destination =
+          from ??
+          (role === "developer" ? `/user/developer/${sub}` : "/user/business");
+
+        navigate(destination, { replace: true });
         return;
       }
 
+      // Handle Cognito challenge steps
       if (nextStep.signInStep === "CONFIRM_SIGN_UP") {
         navigate("/confirmar", { state: { email } });
       }
@@ -127,7 +151,7 @@ const Login: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-black flex items-center justify-center px-4 relative overflow-hidden">
-
+      {/* Background grid */}
       <div
         className="absolute inset-0 opacity-[0.03] pointer-events-none"
         style={{
@@ -136,10 +160,11 @@ const Login: React.FC = () => {
           backgroundSize: "50px 50px",
         }}
       />
+      {/* Glow */}
       <div className="absolute top-1/3 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[400px] h-[400px] rounded-full bg-violet-700 opacity-[0.07] blur-[80px] pointer-events-none" />
 
       <div className="relative z-10 w-full max-w-sm">
-   
+        {/* Logo */}
         <Link to="/" className="flex items-center gap-2 mb-10 group w-fit mx-auto">
           <div className="relative w-7 h-7">
             <div className="absolute inset-0 bg-violet-500 opacity-20 rounded blur-sm" />
@@ -150,8 +175,9 @@ const Login: React.FC = () => {
           <span className="text-white font-black text-base tracking-[0.2em] uppercase">KUSTOM</span>
         </Link>
 
+        {/* Card */}
         <div className="relative border border-violet-900/50 rounded-xl bg-violet-950/10 backdrop-blur-sm p-8 overflow-hidden">
-      
+          {/* Card top accent */}
           <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-violet-600/60 to-transparent" />
 
           <div className="mb-7">
@@ -179,6 +205,7 @@ const Login: React.FC = () => {
               error={errors.password}
             />
 
+            {/* Forgot */}
             <div className="flex justify-end -mt-2">
               <Link
                 to="/recuperar"
@@ -188,6 +215,7 @@ const Login: React.FC = () => {
               </Link>
             </div>
 
+            {/* Global error */}
             {errors.global && (
               <div className="flex items-center gap-2 px-4 py-3 bg-red-950/30 border border-red-800/50 rounded text-xs text-red-400">
                 <svg xmlns="http://www.w3.org/2000/svg" width={14} height={14} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}>

@@ -7,10 +7,8 @@ import { useLanguage } from "@/context/LanguageContext";
 
 function dashboardHref(role?: string, sub?: string): string {
   if (role === "developer") {
-    // /user/developer/:sub — sub is the Cognito userId set in ProtectedRoute
     return sub ? `/user/developer/${sub}` : "/login";
   }
-  // business (or role not yet resolved) → flat route
   return "/user/business";
 }
 
@@ -82,9 +80,9 @@ const Nav: React.FC = () => {
   const handleSignOut = async () => {
     try {
       await signOut();
+      navigate("/login", { replace: true });
       localStorage.clear();
       setUser(null);
-      navigate("/login");
     } catch (err) {
       console.error("Sign out error:", err);
     }
@@ -99,10 +97,6 @@ const Nav: React.FC = () => {
   const isActive = (path: string) =>
     path === "/" ? location.pathname === "/" : location.pathname.startsWith(path);
 
-  // ── Computed once per render, never stale ────────────────────────────────
-  // user.role and user.sub are both set by ProtectedRoute before any
-  // authenticated page mounts, so by the time Nav renders inside a
-  // dashboard these will always be defined.
   const dashHref      = user ? dashboardHref(user.role, user.sub) : "/login";
   const avatarInitial = (user?.displayName?.[0] ?? user?.username?.[0] ?? "U").toUpperCase();
   const onDashboard   = location.pathname.startsWith("/user/") || location.pathname === "/settings";
@@ -152,12 +146,6 @@ const Nav: React.FC = () => {
 
           {user ? (
             <>
-              {/*
-                Dashboard link — fully dynamic:
-                  role === "developer"  →  /user/developer/:sub
-                  role === "business"   →  /user/business
-                sub comes from UserContext (set by ProtectedRoute via fetchUserAttributes)
-              */}
               <Link
                 to={dashHref}
                 className={`px-4 py-1.5 text-xs font-bold tracking-widest uppercase transition-colors ${
@@ -167,7 +155,6 @@ const Nav: React.FC = () => {
                 {lang === "en" ? "Dashboard" : "Panel"}
               </Link>
 
-              {/* Avatar pill — also links to dashboard */}
               <Link
                 to={dashHref}
                 className="flex items-center gap-2 px-3 py-1.5 border border-violet-800/50 rounded bg-violet-950/30 hover:border-violet-600/60 transition-colors"
@@ -199,16 +186,24 @@ const Nav: React.FC = () => {
               </button>
             </>
           ) : (
-            <Link
-              to="/login"
-              className="flex items-center gap-2 px-4 py-1.5 text-xs font-bold tracking-widest uppercase text-black bg-violet-400 hover:bg-violet-300 transition-all rounded"
-            >
-              <svg xmlns="http://www.w3.org/2000/svg" width={14} height={14} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}>
-                <circle cx={12} cy={8} r={4} />
-                <path strokeLinecap="round" d="M4 20c0-3.3 3.6-6 8-6s8 2.7 8 6" />
-              </svg>
-              {lang === "en" ? "Sign in" : "Ingresar"}
-            </Link>
+            <div className="flex items-center gap-2">
+              <Link
+                to="/registro"
+                className="px-4 py-1.5 text-xs font-bold tracking-widest uppercase text-gray-400 border border-violet-900/50 hover:border-violet-600/60 hover:text-violet-300 transition-all rounded"
+              >
+                {lang === "en" ? "Sign up" : "Registrarse"}
+              </Link>
+              <Link
+                to="/login"
+                className="flex items-center gap-2 px-4 py-1.5 text-xs font-bold tracking-widest uppercase text-black bg-violet-400 hover:bg-violet-300 transition-all rounded"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" width={13} height={13} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}>
+                  <circle cx={12} cy={8} r={4} />
+                  <path strokeLinecap="round" d="M4 20c0-3.3 3.6-6 8-6s8 2.7 8 6" />
+                </svg>
+                {lang === "en" ? "Sign in" : "Ingresar"}
+              </Link>
+            </div>
           )}
         </div>
 
@@ -237,10 +232,11 @@ const Nav: React.FC = () => {
 
       <div
         className={`md:hidden overflow-hidden transition-all duration-300 ${
-          menuOpen ? "max-h-96 border-b border-violet-900/40" : "max-h-0"
+          menuOpen ? "max-h-[28rem] border-b border-violet-900/40" : "max-h-0"
         } bg-black/95 backdrop-blur-md`}
       >
         <div className="px-6 py-4 flex flex-col gap-1">
+
           {links.map((link) => (
             <Link
               key={link.path}
@@ -252,31 +248,65 @@ const Nav: React.FC = () => {
               {link.label}
             </Link>
           ))}
-          <div className="pt-4 pb-2 flex flex-col gap-3">
-            {user ? (
-              <>
-                <Link
-                  to={dashHref}
-                  className="text-center py-2.5 text-xs font-bold tracking-widest uppercase text-violet-300 border border-violet-700 rounded"
-                >
-                  {lang === "en" ? "Dashboard" : "Panel"}
-                </Link>
-                <button
-                  onClick={handleSignOut}
-                  className="py-2.5 text-xs font-bold tracking-widest uppercase text-gray-400 border border-violet-900/50 rounded"
-                >
-                  {lang === "en" ? "Sign out" : "Cerrar sesión"}
-                </button>
-              </>
-            ) : (
+
+          <div className="pt-4 pb-1">
+            <span className="text-[9px] font-black tracking-[0.35em] uppercase text-gray-700">
+              {lang === "en" ? "Account" : "Cuenta"}
+            </span>
+          </div>
+
+          {user ? (
+
+            <div className="flex flex-col gap-2 pb-2">
+              <div className="flex items-center gap-2 px-3 py-2 border border-violet-900/40 rounded-lg bg-violet-950/20">
+                <div className="w-6 h-6 rounded-full bg-violet-700 flex items-center justify-center text-[10px] font-black text-white shrink-0">
+                  {avatarInitial}
+                </div>
+                <span className="text-xs text-gray-300 truncate flex-1">{user.displayName ?? user.username}</span>
+                <span className={`text-[8px] font-black tracking-widest uppercase px-1.5 py-0.5 rounded border shrink-0 ${
+                  user.role === "developer"
+                    ? "text-cyan-400 border-cyan-800/50 bg-cyan-950/30"
+                    : "text-violet-400 border-violet-800/50 bg-violet-950/30"
+                }`}>
+                  {user.role === "developer" ? "Dev" : "Biz"}
+                </span>
+              </div>
+
+              <Link
+                to={dashHref}
+                className="text-center py-2.5 text-xs font-black tracking-widest uppercase text-violet-300 border border-violet-700 rounded"
+              >
+                {lang === "en" ? "Dashboard" : "Panel"}
+              </Link>
+              <Link
+                to="/settings"
+                className="text-center py-2.5 text-xs font-bold tracking-widest uppercase text-gray-400 border border-violet-900/40 rounded"
+              >
+                {lang === "en" ? "Settings" : "Configuración"}
+              </Link>
+              <button
+                onClick={handleSignOut}
+                className="py-2.5 text-xs font-bold tracking-widest uppercase text-gray-500 border border-violet-900/30 rounded"
+              >
+                {lang === "en" ? "Sign out" : "Cerrar sesión"}
+              </button>
+            </div>
+          ) : (
+            <div className="flex flex-col gap-2 pb-2">
               <Link
                 to="/login"
-                className="text-center py-2.5 text-xs font-bold tracking-widest uppercase text-black bg-violet-400 hover:bg-violet-300 transition-all rounded"
+                className="text-center py-2.5 text-xs font-black tracking-widest uppercase text-black bg-violet-400 hover:bg-violet-300 transition-all rounded"
               >
                 {lang === "en" ? "Sign in" : "Ingresar"}
               </Link>
-            )}
-          </div>
+              <Link
+                to="/registro"
+                className="text-center py-2.5 text-xs font-bold tracking-widest uppercase text-violet-300 border border-violet-700/60 hover:border-violet-500 rounded transition-colors"
+              >
+                {lang === "en" ? "Create account" : "Crear cuenta"}
+              </Link>
+            </div>
+          )}
         </div>
       </div>
     </header>

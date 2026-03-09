@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Navigate, useLocation } from "react-router-dom";
 import { getCurrentUser, fetchUserAttributes } from "aws-amplify/auth";
 import { useUser } from "@/context/UserContext";
@@ -9,20 +9,27 @@ interface Props {
 }
 
 const ProtectedRoute: React.FC<Props> = ({ children, guestOnly = false }) => {
-  const { user, setUser } = useUser();
-  const location = useLocation();
+  const { setUser } = useUser();
+  const location    = useLocation();
 
   const [checking,      setChecking]      = useState(true);
   const [authenticated, setAuthenticated] = useState(false);
+  const [resolvedRole,  setResolvedRole]  = useState<"developer" | "business" | null>(null);
+  const [resolvedSub,   setResolvedSub]   = useState<string | null>(null);
 
-  const [resolvedRole, setResolvedRole] = useState<"developer" | "business" | null>(null);
-  const [resolvedSub,  setResolvedSub]  = useState<string | null>(null);
+  const didPopulate = useRef(false);
 
   useEffect(() => {
+    let cancelled = false; 
+
     const verify = async () => {
       try {
-        const cognitoUser = await getCurrentUser();
-        const userAttr    = await fetchUserAttributes();
+        const [cognitoUser, userAttr] = await Promise.all([
+          getCurrentUser(),
+          fetchUserAttributes(),
+        ]);
+
+        if (cancelled) return;
 
         const role = (userAttr["custom:userRole"] ?? "business") as "developer" | "business";
         const sub  = cognitoUser.userId;
@@ -31,7 +38,8 @@ const ProtectedRoute: React.FC<Props> = ({ children, guestOnly = false }) => {
         setResolvedRole(role);
         setResolvedSub(sub);
 
-        if (!user) {
+        if (!didPopulate.current) {
+          didPopulate.current = true;
           setUser({
             username:    userAttr.preferred_username ?? cognitoUser.username,
             email:       userAttr.email ?? "",
@@ -41,15 +49,20 @@ const ProtectedRoute: React.FC<Props> = ({ children, guestOnly = false }) => {
           });
         }
       } catch {
+        if (cancelled) return;
         setAuthenticated(false);
         setUser(null);
       } finally {
-        setChecking(false);
+        if (!cancelled) setChecking(false);
       }
     };
+
     verify();
+
+    return () => { cancelled = true; };
   }, []);
 
+  // ── Spinner ────────────────────────────────────────────────────────────────
   if (checking) {
     return (
       <div className="min-h-screen bg-black flex items-center justify-center">
@@ -66,7 +79,7 @@ const ProtectedRoute: React.FC<Props> = ({ children, guestOnly = false }) => {
   if (guestOnly && authenticated) {
     const home =
       resolvedRole === "developer"
-        ? `/user/developer/${resolvedSub}`  
+        ? `/user/developer/${resolvedSub}`
         : "/user/business";
     return <Navigate to={home} replace />;
   }

@@ -1,10 +1,12 @@
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { signUp, confirmSignUp, resendSignUpCode } from "aws-amplify/auth";
+import { signUp, signIn, confirmSignUp, resendSignUpCode, fetchUserAttributes, getCurrentUser } from "aws-amplify/auth";
 import { useLanguage } from "@/context/LanguageContext";
+import { useUser } from "@/context/UserContext";
 
 type Role = "business" | "developer";
 type Step = "form" | "confirm";
+
 
 const Field: React.FC<{
   label: string;
@@ -86,8 +88,8 @@ const RoleCard: React.FC<{
   </button>
 );
 
-const ConfirmStep: React.FC<{ email: string; lang: string; onSuccess: () => void }> = ({
-  email, lang, onSuccess,
+const ConfirmStep: React.FC<{ email: string; password: string; lang: string; onSuccess: () => void }> = ({
+  email, password, lang, onSuccess,
 }) => {
   const [code, setCode]         = useState("");
   const [error, setError]       = useState("");
@@ -101,9 +103,29 @@ const ConfirmStep: React.FC<{ email: string; lang: string; onSuccess: () => void
     setError("");
     try {
       await confirmSignUp({ username: email, confirmationCode: code });
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : String(err);
+      const alreadyConfirmed =
+        msg.includes("already confirmed") ||
+        msg.includes("CONFIRMED") ||
+        msg.includes("NotAuthorizedException") ||
+        msg.includes("AliasExistsException");
+      if (!alreadyConfirmed) {
+        setError(msg);
+        setLoading(false);
+        return;
+      }
+    }
+    try {
+      await signIn({ username: email, password });
       onSuccess();
     } catch (err: unknown) {
-      setError(err instanceof Error ? err.message : "Invalid code");
+      const msg = err instanceof Error ? err.message : String(err);
+      if (msg.includes("already signed in") || msg.includes("UserAlreadyAuthenticated")) {
+        onSuccess();
+      } else {
+        setError(msg);
+      }
     } finally {
       setLoading(false);
     }
@@ -158,8 +180,10 @@ const ConfirmStep: React.FC<{ email: string; lang: string; onSuccess: () => void
   );
 };
 
+
 const Register: React.FC = () => {
   const { lang } = useLanguage();
+  const { setUser } = useUser();
   const navigate = useNavigate();
 
   const [step, setStep]           = useState<Step>("form");
@@ -211,7 +235,7 @@ const Register: React.FC = () => {
           userAttributes: {
             email,
             preferred_username: username,
-            "custom:userRole": role,
+            "custom:role": role,
           },
         },
       });
@@ -230,7 +254,7 @@ const Register: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-black flex items-center justify-center px-4 py-16 relative overflow-hidden">
-
+      {/* Background grid */}
       <div
         className="absolute inset-0 opacity-[0.03] pointer-events-none"
         style={{
@@ -242,7 +266,7 @@ const Register: React.FC = () => {
       <div className="absolute top-1/3 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[500px] h-[500px] rounded-full bg-violet-700 opacity-[0.06] blur-[100px] pointer-events-none" />
 
       <div className="relative z-10 w-full max-w-md">
-   
+        {/* Logo */}
         <Link to="/" className="flex items-center gap-2 mb-10 group w-fit mx-auto">
           <div className="relative w-7 h-7">
             <div className="absolute inset-0 bg-violet-500 opacity-20 rounded blur-sm" />
@@ -253,6 +277,7 @@ const Register: React.FC = () => {
           <span className="text-white font-black text-base tracking-[0.2em] uppercase">KUSTOM</span>
         </Link>
 
+        {/* Progress indicator */}
         <div className="flex items-center gap-2 mb-8 justify-center">
           {(["form", "confirm"] as Step[]).map((s, i) => (
             <div key={s} className="flex items-center gap-2">
@@ -270,6 +295,7 @@ const Register: React.FC = () => {
           ))}
         </div>
 
+        {/* Card */}
         <div className="relative border border-violet-900/50 rounded-xl bg-violet-950/10 backdrop-blur-sm p-8 overflow-hidden">
           <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-violet-600/60 to-transparent" />
 
@@ -285,12 +311,38 @@ const Register: React.FC = () => {
           {step === "confirm" ? (
             <ConfirmStep
               email={email}
+              password={password}
               lang={lang}
-              onSuccess={() => navigate("/login", { state: { registered: true } })}
+              onSuccess={async () => {
+                // Session is already open from the signIn call inside ConfirmStep.
+                // Fetch attributes to resolve role + sub, set context, then navigate.
+                try {
+                  const [cognitoUser, attrs] = await Promise.all([
+                    getCurrentUser(),
+                    fetchUserAttributes(),
+                  ]);
+                  const role = (attrs["custom:userRole"] ?? "business") as "developer" | "business";
+                  const sub  = cognitoUser.userId;
+                  setUser({
+                    username:    attrs.preferred_username ?? cognitoUser.username,
+                    email:       attrs.email ?? email,
+                    role,
+                    sub,
+                    displayName: attrs.preferred_username ?? cognitoUser.username,
+                  });
+                  navigate(
+                    role === "developer" ? `/user/developer/${sub}` : "/user/business",
+                    { replace: true }
+                  );
+                } catch {
+                  // Fallback — shouldn't happen but don't leave the user stuck
+                  navigate("/login", { state: { registered: true } });
+                }
+              }}
             />
           ) : (
             <form onSubmit={handleSignUp} className="flex flex-col gap-5" noValidate>
-  
+              {/* Role selector */}
               <div className="flex flex-col gap-2">
                 <label className="text-[10px] font-bold tracking-[0.25em] uppercase text-gray-500">{t.roleQ}</label>
                 <div className="flex gap-3">
@@ -326,6 +378,7 @@ const Register: React.FC = () => {
               <Field label={t.pass}    type="password" value={password} onChange={setPassword} placeholder="••••••••"         autoComplete="new-password"  error={errors.password} />
               <Field label={t.confirm} type="password" value={confirm}  onChange={setConfirm}  placeholder="••••••••"         autoComplete="new-password"  error={errors.confirm}  />
 
+              {/* Password strength hints */}
               <div className="flex gap-3 -mt-2">
                 {[
                   { ok: password.length >= 8,    hint: "8+" },

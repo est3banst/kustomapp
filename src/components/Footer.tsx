@@ -1,6 +1,10 @@
-import { NavLink, useLocation } from "react-router-dom";
+import { NavLink } from "react-router-dom";
 import { useLanguage } from "@/context/LanguageContext";
+import { useUser } from "@/context/UserContext";
 
+// ─────────────────────────────────────────────────────────────────────────────
+// Helpers
+// ─────────────────────────────────────────────────────────────────────────────
 const FooterHeading: React.FC<{ label: string }> = ({ label }) => (
   <div className="mb-5">
     <h3 className="text-[9px] font-black tracking-[0.35em] uppercase text-gray-600">{label}</h3>
@@ -17,7 +21,7 @@ const FLink: React.FC<{ to: string; children: React.ReactNode }> = ({ to, childr
       }`
     }
   >
-    <span className="w-0 h-px bg-violet-500 group-hover:w-3 transition-all duration-200" />
+    <span className="w-0 h-px bg-violet-500 group-hover:w-3 transition-all duration-200 shrink-0" />
     {children}
   </NavLink>
 );
@@ -36,43 +40,67 @@ const SocialLink: React.FC<{ href: string; label: string; children: React.ReactN
   </a>
 );
 
+// ─────────────────────────────────────────────────────────────────────────────
+// Footer
+// ─────────────────────────────────────────────────────────────────────────────
 const Footer: React.FC = () => {
   const { lang } = useLanguage();
+  const { user } = useUser();
   const year = new Date().getFullYear();
 
+  // ── Platform links (always shown) ────────────────────────────────────────
   const platformLinks = [
-    { label: lang === "en" ? "Browse Services"  : "Ver Servicios",       path: "/services"          },
-    { label: lang === "en" ? "Find a Developer" : "Encontrar Desarrollador", path: "/developers"    },
-    { label: lang === "en" ? "Post a Project"   : "Publicar Proyecto",   path: "/pub-project"      },
-    { label: lang === "en" ? "FAQ"     : "Preguntas",   path: "/faq"     },
+    { label: lang === "en" ? "Browse services"   : "Ver servicios",        path: "/services"          },
+    { label: lang === "en" ? "Find a developer"  : "Encontrar dev",        path: "/developers"        },
+    { label: lang === "en" ? "Post a project"    : "Publicar proyecto",    path: "/pub-project"       },
+    { label: lang === "en" ? "FAQ"               : "Preguntas frecuentes", path: "/faq"               },
+    { label: lang === "en" ? "Free consultation" : "Consulta gratis",      path: "/free-consultation" },
   ];
 
+  // ── Account links — change based on auth state ────────────────────────────
+  const dashHref = user?.role === "developer" && user?.sub
+    ? `/user/developer/${user.sub}`
+    : "/user/business";
+
+  const accountLinks = user
+    ? [
+        { label: lang === "en" ? "Dashboard" : "Panel",              path: dashHref    },
+        { label: lang === "en" ? "Settings"  : "Configuración",      path: "/settings" },
+        { label: lang === "en" ? "Help"      : "Ayuda",              path: "/help"     },
+      ]
+    : [
+        { label: lang === "en" ? "Sign in"           : "Ingresar",       path: "/login"             },
+        { label: lang === "en" ? "Create account"    : "Crear cuenta",   path: "/registro"          },
+        { label: lang === "en" ? "Help center"       : "Centro de ayuda",path: "/help"              },
+      ];
+
+  // ── Legal ─────────────────────────────────────────────────────────────────
   const legalLinks = [
-    { label: lang === "en" ? "Privacy Policy"  : "Privacidad",   path: "/privacy"  },
-    { label: lang === "en" ? "Terms of Service": "Términos",     path: "/terms"    },
-    { label: lang === "en" ? "Cookie Policy"   : "Cookies",      path: "/cookies"  },
+    { label: lang === "en" ? "Privacy Policy"   : "Privacidad", path: "/privacy" },
+    { label: lang === "en" ? "Terms of Service" : "Términos",   path: "/terms"   },
+    { label: lang === "en" ? "Cookie Policy"    : "Cookies",    path: "/cookies" },
   ];
 
   return (
     <footer className="relative bg-black border-t border-violet-950/60 overflow-hidden">
-    
+
+      {/* Bg grid */}
       <div
         className="absolute inset-0 opacity-[0.025] pointer-events-none"
         style={{
-          backgroundImage:
-            "linear-gradient(rgba(167,139,250,1) 1px, transparent 1px), linear-gradient(90deg, rgba(167,139,250,1) 1px, transparent 1px)",
+          backgroundImage: "linear-gradient(rgba(167,139,250,1) 1px, transparent 1px), linear-gradient(90deg, rgba(167,139,250,1) 1px, transparent 1px)",
           backgroundSize: "50px 50px",
         }}
       />
-     
       <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-violet-600/50 to-transparent" />
 
       <div className="relative max-w-7xl mx-auto px-6 pt-16 pb-8">
-      
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-12 mb-14">
 
-          
-          <div className="lg:col-span-1">
+        {/* ── 4-col grid: brand / platform / account / newsletter ── */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-12 mb-14">
+
+          {/* Brand */}
+          <div>
             <div className="flex items-center gap-2 mb-5">
               <div className="relative w-7 h-7">
                 <div className="absolute inset-0 bg-violet-500 opacity-20 rounded blur-sm" />
@@ -87,7 +115,6 @@ const Footer: React.FC = () => {
                 ? "The platform connecting vetted developers with businesses that need digital solutions."
                 : "La plataforma que conecta desarrolladores verificados con empresas que necesitan soluciones digitales."}
             </p>
-         
             <div className="flex items-center gap-2">
               <SocialLink href="https://www.instagram.com/kustom_desarrollo/" label="Instagram">
                 <svg xmlns="http://www.w3.org/2000/svg" width={15} height={15} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5}>
@@ -115,6 +142,7 @@ const Footer: React.FC = () => {
             </div>
           </div>
 
+          {/* Platform */}
           <div>
             <FooterHeading label={lang === "en" ? "Platform" : "Plataforma"} />
             <nav className="flex flex-col gap-3.5">
@@ -122,6 +150,32 @@ const Footer: React.FC = () => {
             </nav>
           </div>
 
+          {/* Account — context-aware */}
+          <div>
+            <FooterHeading label={lang === "en" ? "Account" : "Cuenta"} />
+            <nav className="flex flex-col gap-3.5">
+              {accountLinks.map((l) => <FLink key={l.path} to={l.path}>{l.label}</FLink>)}
+            </nav>
+
+            {/* Signed-in indicator */}
+            {user && (
+              <div className="mt-5 flex items-center gap-2 px-3 py-2 border border-violet-900/40 rounded-lg bg-violet-950/20 w-fit">
+                <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 shrink-0" />
+                <span className="text-[10px] text-gray-500 truncate max-w-[120px]">
+                  {user.displayName ?? user.username}
+                </span>
+                <span className={`text-[8px] font-black tracking-widest uppercase px-1.5 py-0.5 rounded border ${
+                  user.role === "developer"
+                    ? "text-cyan-400 border-cyan-800/50 bg-cyan-950/30"
+                    : "text-violet-400 border-violet-800/50 bg-violet-950/30"
+                }`}>
+                  {user.role === "developer" ? "Dev" : "Biz"}
+                </span>
+              </div>
+            )}
+          </div>
+
+          {/* Newsletter */}
           <div>
             <FooterHeading label={lang === "en" ? "Stay in the loop" : "Mantente al día"} />
             <p className="text-xs text-gray-500 mb-4 leading-relaxed">
@@ -129,7 +183,6 @@ const Footer: React.FC = () => {
                 ? "Get updates on new developers, features & opportunities."
                 : "Novedades sobre desarrolladores, funciones y oportunidades."}
             </p>
-         
             <div className="flex gap-2 mb-6">
               <input
                 type="email"
@@ -150,9 +203,10 @@ const Footer: React.FC = () => {
           </div>
         </div>
 
-      
+        {/* ── Divider ── */}
         <div className="h-px bg-gradient-to-r from-transparent via-violet-900/60 to-transparent mb-8" />
 
+        {/* ── Bottom bar ── */}
         <div className="flex flex-col md:flex-row items-center justify-between gap-4">
           <span className="text-[10px] font-bold tracking-[0.25em] uppercase text-gray-600">
             Kustom © {year} — {lang === "en" ? "Digital solutions at your reach" : "Soluciones digitales a tu alcance"}
