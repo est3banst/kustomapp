@@ -9,7 +9,7 @@ import Nav from "@/components/Nav";
 // ─────────────────────────────────────────────────────────────────────────────
 // API
 // ─────────────────────────────────────────────────────────────────────────────
-const BASE = "https://cust-worker.steven-devs-664.workers.dev";
+
 
 async function authHeader() {
   const session = await fetchAuthSession();
@@ -37,14 +37,14 @@ export interface DeveloperProfile {
 }
 
 async function fetchMyProfile(): Promise<DeveloperProfile> {
-  const res = await fetch(`${BASE}/api/developers/me`, { headers: await authHeader() });
+  const res = await fetch(`${import.meta.env.VITE_API_URL}/api/developers/me`, { headers: await authHeader() });
   const data = await res.json();
   if (!res.ok) throw new Error(data.error ?? `HTTP ${res.status}`);
   return data as DeveloperProfile;
 }
 
 async function patchMyProfile(patch: Partial<DeveloperProfile>): Promise<DeveloperProfile> {
-  const res = await fetch(`${BASE}/api/developers/me`, {
+  const res = await fetch(`${import.meta.env.VITE_API_URL}/api/developers/me`, {
     method:  "PATCH",
     headers: { "Content-Type": "application/json", ...(await authHeader()) },
     body:    JSON.stringify(patch),

@@ -1,10 +1,11 @@
 import { useState } from "react";
+import { useTurnstile } from "@/hooks/useTurnStile";
 import { Link, useNavigate } from "react-router-dom";
 import { useLanguage } from "@/context/LanguageContext";
 import { useUser } from "@/context/UserContext";
 import Nav from "@/components/Nav";
 import Footer from "@/components/Footer";
-import { createProject } from "@/api/projects"
+import { createProject } from "@/api/projects";
 
 // ── Types ───────────────────────────────────────────────────────────────────
 type Category   = "landing" | "ecommerce" | "webapp" | "mobile" | "api" | "support" | "design" | "other";
@@ -252,6 +253,7 @@ const PostProject: React.FC = () => {
   const { lang }   = useLanguage();
   const { user }   = useUser();
   const navigate   = useNavigate();
+  const { getToken, WidgetSlot } = useTurnstile();
 
   const now      = new Date();
   const postedAt = now.toLocaleDateString(lang === "en" ? "en-US" : "es-AR", {
@@ -293,14 +295,22 @@ const PostProject: React.FC = () => {
     setApiError("");
 
     try {
+      const cfToken = await getToken();
+      if (!cfToken) {
+        setApiError(lang === "en" ? "Bot check failed — please try again" : "Verificación fallida — intentá de nuevo");
+        setLoading(false);
+        return;
+      }
+
       const result = await createProject({
-        title:       form.title.trim(),
-        category:    form.category!,
-        description: form.description.trim(),
-        skills:      form.skills,
-        budget:      form.budget ? BUDGET_LABELS[form.budget] : null,
-        timeline:    form.timeline ? TIMELINE_LABELS[form.timeline] : null,
-        visibility:  form.visibility,
+        title:             form.title.trim(),
+        category:          form.category!,
+        description:       form.description.trim(),
+        skills:            form.skills,
+        budget:            form.budget ? BUDGET_LABELS[form.budget] : null,
+        timeline:          form.timeline ? TIMELINE_LABELS[form.timeline] : null,
+        visibility:        form.visibility,
+        cf_turnstile_token: cfToken,
       });
 
       setCreatedId(result.id);
@@ -518,6 +528,7 @@ const PostProject: React.FC = () => {
               )}
 
               {/* Submit */}
+              <WidgetSlot />
               <div className="flex flex-col sm:flex-row gap-4 items-center pt-2 pb-12">
                 <button
                   type="submit" disabled={loading}

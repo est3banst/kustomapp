@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Link, useNavigate, useLocation } from "react-router-dom";
 import { signIn, fetchUserAttributes, getCurrentUser } from "aws-amplify/auth";
 import { useUser } from "@/context/UserContext";
+import { useTurnstile } from "@/hooks/useTurnStile";
 import { useLanguage } from "@/context/LanguageContext";
 
 // ── Reusable field ──────────────────────────────────────────────────
@@ -69,6 +70,7 @@ const Login: React.FC = () => {
   const location = useLocation();
 
   const from = (location.state as { from?: Location })?.from?.pathname ?? null;
+  const { getToken, WidgetSlot } = useTurnstile();
 
   const [email, setEmail]       = useState("");
   const [password, setPassword] = useState("");
@@ -104,6 +106,13 @@ const Login: React.FC = () => {
     setLoading(true);
     setErrors({});
     try {
+      const cfToken = await getToken();
+      if (!cfToken) {
+        setErrors({ global: lang === "en" ? "Bot check failed — please try again" : "Verificación fallida — intentá de nuevo" });
+        setLoading(false);
+        return;
+      }
+
       const { isSignedIn, nextStep } = await signIn({ username: email, password });
 
       if (isSignedIn) {
@@ -225,6 +234,7 @@ const Login: React.FC = () => {
               </div>
             )}
 
+            <WidgetSlot />
             <button
               type="submit"
               disabled={loading}

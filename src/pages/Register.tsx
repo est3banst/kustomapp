@@ -3,11 +3,12 @@ import { Link, useNavigate } from "react-router-dom";
 import { signUp, signIn, confirmSignUp, resendSignUpCode, fetchUserAttributes, getCurrentUser } from "aws-amplify/auth";
 import { useLanguage } from "@/context/LanguageContext";
 import { useUser } from "@/context/UserContext";
+import { useTurnstile } from "@/hooks/useTurnStile";
 
 type Role = "business" | "developer";
 type Step = "form" | "confirm";
 
-
+// ── Reusable field (same pattern as Login) ──────────────────────────
 const Field: React.FC<{
   label: string;
   type: string;
@@ -55,6 +56,7 @@ const Field: React.FC<{
   );
 };
 
+// ── Role selector card ──────────────────────────────────────────────
 const RoleCard: React.FC<{
   role: Role;
   selected: boolean;
@@ -88,6 +90,7 @@ const RoleCard: React.FC<{
   </button>
 );
 
+// ── OTP confirm step ────────────────────────────────────────────────
 const ConfirmStep: React.FC<{ email: string; password: string; lang: string; onSuccess: () => void }> = ({
   email, password, lang, onSuccess,
 }) => {
@@ -95,6 +98,7 @@ const ConfirmStep: React.FC<{ email: string; password: string; lang: string; onS
   const [error, setError]       = useState("");
   const [loading, setLoading]   = useState(false);
   const [resent, setResent]     = useState(false);
+  const { getToken, WidgetSlot } = useTurnstile();
 
   const handleConfirm = async (ev: React.FormEvent) => {
     ev.preventDefault();
@@ -105,6 +109,8 @@ const ConfirmStep: React.FC<{ email: string; password: string; lang: string; onS
       await confirmSignUp({ username: email, confirmationCode: code });
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : String(err);
+      // "Already confirmed" means the code worked on a previous attempt but the
+      // redirect failed (expired-code-then-new-code race). Treat it as success.
       const alreadyConfirmed =
         msg.includes("already confirmed") ||
         msg.includes("CONFIRMED") ||
@@ -115,11 +121,19 @@ const ConfirmStep: React.FC<{ email: string; password: string; lang: string; onS
         setLoading(false);
         return;
       }
+      // Fall through — account is confirmed, proceed to sign in
     }
     try {
+      const cfToken = await getToken();
+      if (!cfToken) {
+        setError(lang === "en" ? "Bot check failed — please try again" : "Verificación fallida — intentá de nuevo");
+        setLoading(false);
+        return;
+      }
       await signIn({ username: email, password });
       onSuccess();
     } catch (err: unknown) {
+      // If already signed in from a previous attempt, onSuccess still works
       const msg = err instanceof Error ? err.message : String(err);
       if (msg.includes("already signed in") || msg.includes("UserAlreadyAuthenticated")) {
         onSuccess();
@@ -158,6 +172,7 @@ const ConfirmStep: React.FC<{ email: string; password: string; lang: string; onS
           autoComplete="one-time-code"
           error={error}
         />
+        <WidgetSlot />
         <button
           type="submit"
           disabled={loading}
@@ -180,7 +195,7 @@ const ConfirmStep: React.FC<{ email: string; password: string; lang: string; onS
   );
 };
 
-
+// ── Register page ───────────────────────────────────────────────────
 const Register: React.FC = () => {
   const { lang } = useLanguage();
   const { setUser } = useUser();

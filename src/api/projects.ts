@@ -9,7 +9,7 @@
 
 import { fetchAuthSession } from "aws-amplify/auth";
 
-const BASE = "https://cust-worker.steven-devs-664.workers.dev";
+const BASE = import.meta.env.VITE_API_URL;
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 export type ProjectStatus     = "open" | "in_progress" | "review" | "completed" | "cancelled";
@@ -30,13 +30,14 @@ export interface Project {
 }
 
 export interface CreateProjectPayload {
-  title:       string;
-  category:    string;
-  description: string;
-  skills:      string[];
-  budget:      string | null;
-  timeline:    string | null;
-  visibility:  ProjectVisibility;
+  title:               string;
+  category:            string;
+  description:         string;
+  skills:              string[];
+  budget:              string | null;
+  timeline:            string | null;
+  visibility:          ProjectVisibility;
+  cf_turnstile_token?: string;
 }
 
 export interface ProjectFilters {

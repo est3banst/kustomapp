@@ -1,4 +1,6 @@
+import React, { useState } from "react";
 import { NavLink } from "react-router-dom";
+import { useTurnstile } from "@/hooks/useTurnStile";
 import { useLanguage } from "@/context/LanguageContext";
 import { useUser } from "@/context/UserContext";
 
@@ -48,6 +50,48 @@ const Footer: React.FC = () => {
   const { user } = useUser();
   const year = new Date().getFullYear();
 
+  // ── Newsletter ────────────────────────────────────────────────────────────
+  const [nlEmail,   setNlEmail]   = useState("");
+  const [nlState,   setNlState]   = useState<"idle" | "loading" | "done" | "error">("idle");
+  const [nlError,   setNlError]   = useState("");
+  const { getToken: getNlToken, WidgetSlot: NlWidgetSlot } = useTurnstile();
+
+  const handleNewsletter = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!nlEmail || !/\S+@\S+\.\S+/.test(nlEmail)) {
+      setNlError(lang === "en" ? "Enter a valid email" : "Ingresá un email válido");
+      return;
+    }
+    setNlState("loading");
+    setNlError("");
+    console.log("Here it is");
+    try {
+      const cfToken = await getNlToken();
+      if (!cfToken) {
+        setNlError(lang === "en" ? "Bot check failed" : "Verificación fallida");
+        setNlState("idle");
+        return;
+      }
+      const res = await fetch(
+        `${import.meta.env.VITE_API_URL}/api/newsletter`,
+        {
+          method:  "POST",
+          headers: { "Content-Type": "application/json" },
+          body:    JSON.stringify({ email: nlEmail, cf_turnstile_token: cfToken }),
+        }
+      );
+      if (!res.ok) {
+        const data = await res.json() as { error?: string };
+        throw new Error(data.error ?? "Failed");
+      }
+      setNlState("done");
+      setNlEmail("");
+    } catch (err: unknown) {
+      setNlError(err instanceof Error ? err.message : "Something went wrong");
+      setNlState("error");
+    }
+  };
+
   // ── Platform links (always shown) ────────────────────────────────────────
   const platformLinks = [
     { label: lang === "en" ? "Browse services"   : "Ver servicios",        path: "/services"          },
@@ -72,6 +116,7 @@ const Footer: React.FC = () => {
         { label: lang === "en" ? "Sign in"           : "Ingresar",       path: "/login"             },
         { label: lang === "en" ? "Create account"    : "Crear cuenta",   path: "/registro"          },
         { label: lang === "en" ? "Help center"       : "Centro de ayuda",path: "/help"              },
+        { label: lang === "en" ? "Free consultation" : "Consulta gratis",path: "/free-consultation" },
       ];
 
   // ── Legal ─────────────────────────────────────────────────────────────────
@@ -183,16 +228,39 @@ const Footer: React.FC = () => {
                 ? "Get updates on new developers, features & opportunities."
                 : "Novedades sobre desarrolladores, funciones y oportunidades."}
             </p>
-            <div className="flex gap-2 mb-6">
-              <input
-                type="email"
-                placeholder={lang === "en" ? "username@email.com" : "usuario@correo.com"}
-                className="flex-1 min-w-0 px-3 py-2 text-xs bg-violet-950/30 border border-violet-900/50 rounded text-gray-300 placeholder-gray-600 focus:outline-none focus:border-violet-500/70 transition-colors"
-              />
-              <button className="px-3 py-2 bg-violet-500 hover:bg-violet-400 text-black text-xs font-black rounded transition-colors shrink-0">
-                →
-              </button>
-            </div>
+
+            {nlState === "done" ? (
+              <div className="flex items-center gap-2 px-3 py-2.5 mb-6 border border-emerald-800/50 bg-emerald-950/20 rounded text-xs text-emerald-400">
+                <svg xmlns="http://www.w3.org/2000/svg" width={12} height={12} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5}><polyline points="20 6 9 17 4 12"/></svg>
+                {lang === "en" ? "You're subscribed!" : "¡Te suscribiste!"}
+              </div>
+            ) : (
+              <form onSubmit={handleNewsletter} noValidate className="mb-6">
+                <NlWidgetSlot />
+                <div className="flex gap-2">
+                  <input
+                    type="email"
+                    name="email"
+                    value={nlEmail}
+                    onChange={(e) => { setNlEmail(e.target.value); setNlError(""); }}
+                    placeholder={lang === "en" ? "username@email.com" : "usuario@correo.com"}
+                    className={`flex-1 min-w-0 px-3 py-2 text-xs bg-violet-950/30 border rounded text-gray-300 placeholder-gray-600 focus:outline-none transition-colors ${nlError ? "border-red-700/60" : "border-violet-900/50 focus:border-violet-500/70"}`}
+                  />
+                  <button
+                    type="submit"
+                    disabled={nlState === "loading"}
+                    className="px-3 py-2 bg-violet-500 hover:bg-violet-400 disabled:opacity-50 text-black text-xs font-black rounded transition-colors shrink-0"
+                  >
+                    {nlState === "loading"
+                      ? <span className="w-3 h-3 border border-black border-t-transparent rounded-full animate-spin block" />
+                      : "→"}
+                  </button>
+                </div>
+                {nlError && (
+                  <p className="mt-1.5 text-[10px] text-red-400">{nlError}</p>
+                )}
+              </form>
+            )}
             <a
               href="mailto:info@kustomdev.com"
               className="text-xs text-gray-500 hover:text-violet-300 transition-colors flex items-center gap-2 group"
